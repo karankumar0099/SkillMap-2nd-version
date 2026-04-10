@@ -1,5 +1,6 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import { useAuth } from './AuthContext';
+import API_BASE_URL from '../config';
 
 const NoteContext = createContext();
 
@@ -19,7 +20,7 @@ export const NoteProvider = ({ children }) => {
     const fetchNotes = async (userId) => {
         setLoading(true);
         try {
-            const response = await fetch(`http://localhost:5001/api/notes/user/${userId}`);
+            const response = await fetch(`${API_BASE_URL}/api/notes/user/${userId}`);
             if (response.ok) {
                 const data = await response.json();
                 setNotes(data);
@@ -35,7 +36,7 @@ export const NoteProvider = ({ children }) => {
         const userId = user._id || user.id;
 
         try {
-            const response = await fetch('http://localhost:5001/api/notes/save', {
+            const response = await fetch(`${API_BASE_URL}/api/notes/save`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

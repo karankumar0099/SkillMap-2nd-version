@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './SkillInput.css';
 import { searchRoadmapId } from '../../data/roadmapRegistry';
+import API_BASE_URL from '../../config';
 
 const SkillInput = () => {
   const navigate = useNavigate();
@@ -43,7 +44,7 @@ const SkillInput = () => {
     setIsGenerating(true);
     
     try {
-        const response = await fetch("http://localhost:5001/api/ai/generate-roadmap", {
+        const response = await fetch(`${API_BASE_URL}/api/ai/analyze-skill`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ targetRole, knownSkills: allKnownSkills })

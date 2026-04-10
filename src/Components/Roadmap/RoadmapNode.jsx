@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useNotes } from '../../context/NoteContext';
+import API_BASE_URL from '../../config';
 import RoadmapLine from './RoadmapLine';
 import Quiz from '../Quiz/Quiz';
 import { getQuiz } from '../../data/quizRegistry';
@@ -76,7 +77,7 @@ const RoadmapNode = ({ node, isLast }) => {
         setIsLoadingQuiz(true);
         setShowQuiz(true);
 
-        const API_BASE_URL = 'http://localhost:5001';
+
 
         try {
             // Try to generate AI quiz

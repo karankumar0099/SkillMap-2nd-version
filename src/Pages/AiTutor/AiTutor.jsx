@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import './AiTutor.css';
 import ReactMarkdown from 'react-markdown';
+import API_BASE_URL from '../../config';
 
 const AiTutor = ({ mode = 'page', roadmapContext = null }) => {
     const [inputText, setInputText] = useState('');
@@ -66,7 +67,7 @@ const AiTutor = ({ mode = 'page', roadmapContext = null }) => {
                 };
             }
 
-            const response = await fetch("http://localhost:5001/api/ai/chat", {
+            const response = await fetch(`${API_BASE_URL}/api/ai/chat`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload)
