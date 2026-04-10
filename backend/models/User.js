@@ -20,6 +20,29 @@ const userSchema = new mongoose.Schema({
             roadmapId: { type: String, required: true },
             stepId: { type: String, required: true }
         }
+    ],
+    
+    customRoadmaps: [
+        {
+            id: { type: String, required: true },
+            title: { type: String, required: true },
+            description: String,
+            nodes: [mongoose.Schema.Types.Mixed]
+        }
+    ],
+
+    visitedLinks: [
+        {
+            roadmapId: { type: String, required: true },
+            stepId: { type: String, required: true }
+        }
+    ],
+
+    quizAttempts: [
+        {
+            roadmapId: { type: String, required: true },
+            stepId: { type: String, required: true }
+        }
     ]
 }, { timestamps: true });
 

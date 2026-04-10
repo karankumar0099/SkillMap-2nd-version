@@ -31,8 +31,8 @@ const RoadmapNode = ({ node, isLast }) => {
     const [noteText, setNoteText] = useState("");
 
     const { id: roadmapId } = useParams();
-    const { user, updateProgress } = useAuth();
-    const { getNoteForStep, saveNote } = useNotes();
+    const { user, updateProgress, trackVisit, trackQuiz } = useAuth();
+    const { getNoteForStep, saveNote, deleteNote } = useNotes();
 
     const existingNote = getNoteForStep(roadmapId, node.id);
     const bookmarked = existingNote?.isBookmarked || false;
@@ -50,6 +50,19 @@ const RoadmapNode = ({ node, isLast }) => {
         step => step.roadmapId === roadmapId && step.stepId === node.id
     );
 
+    const isVisited = user?.visitedLinks?.some(
+        s => s.roadmapId === roadmapId && s.stepId === node.id
+    );
+
+    const isQuizAttempted = user?.quizAttempts?.some(
+        s => s.roadmapId === roadmapId && s.stepId === node.id
+    );
+
+    const hasLink = !!node.website;
+    const hasQuiz = true; // Every node has a quiz button in this app
+
+    const canComplete = (!hasLink || isVisited) && (!hasQuiz || isQuizAttempted);
+
     const toggleOpen = () => setIsOpen(!isOpen);
 
     const handleCheckboxChange = (e) => {
@@ -58,6 +71,15 @@ const RoadmapNode = ({ node, isLast }) => {
             alert("Please login to save progress");
             return;
         }
+
+        if (e.target.checked && !canComplete) {
+            let message = "Keep learning! To mark this as done, you must:";
+            if (hasLink && !isVisited) message += "\n- Visit the external resource link";
+            if (hasQuiz && !isQuizAttempted) message += "\n- Attempt the quiz at least once";
+            alert(message);
+            return;
+        }
+
         updateProgress(roadmapId, node.id, e.target.checked);
     };
 
@@ -140,6 +162,21 @@ const RoadmapNode = ({ node, isLast }) => {
         await saveNote(roadmapId, node.id, noteText, !bookmarked);
     };
 
+    const handleDeleteNoteInternal = async (e) => {
+        e.stopPropagation();
+        if (existingNote?._id && window.confirm('Delete this note?')) {
+            await deleteNote(existingNote._id);
+            setNoteText("");
+        }
+    };
+
+    const handleLinkClick = (e) => {
+        e.stopPropagation();
+        if (user) {
+            trackVisit(roadmapId, node.id);
+        }
+    };
+
     const handleToggleNoteEditor = (e) => {
         e.stopPropagation();
         if (!user) {
@@ -161,8 +198,11 @@ const RoadmapNode = ({ node, isLast }) => {
                             setQuizData(null);
                         }}
                         onComplete={(score, total) => {
+                            if (user) {
+                                trackQuiz(roadmapId, node.id);
+                            }
                             if (score === total) {
-                                if (!isCompleted && user) {
+                                if (!isCompleted && user && canComplete) {
                                     updateProgress(roadmapId, node.id, true);
                                 }
                             }
@@ -218,11 +258,11 @@ const RoadmapNode = ({ node, isLast }) => {
                     <div className="node-actions" style={{ gap: '10px' }}>
                         {/* Always show quiz button - will try AI first, fallback to static */}
                         <button
-                            className="node-link"
-                            style={{ background: '#8b5cf6', borderColor: '#8b5cf6' }}
+                            className={`node-link ${isQuizAttempted ? 'attempted' : ''}`}
+                            style={isQuizAttempted ? { background: '#10b981', borderColor: '#10b981' } : { background: '#8b5cf6', borderColor: '#8b5cf6' }}
                             onClick={handleStartQuiz}
                         >
-                            {isLoadingQuiz ? 'Generating...' : 'Take Quiz'}
+                            {isLoadingQuiz ? 'Generating...' : (isQuizAttempted ? '✓ Quiz Done' : 'Take Quiz')}
                         </button>
 
                         {node.website && (
@@ -230,10 +270,11 @@ const RoadmapNode = ({ node, isLast }) => {
                                 href={node.website}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="node-link"
-                                onClick={(e) => e.stopPropagation()}
+                                className={`node-link ${isVisited ? 'visited' : ''}`}
+                                onClick={handleLinkClick}
+                                style={isVisited ? { borderColor: '#10b981', color: '#10b981' } : {}}
                             >
-                                Learn More <ExternalLinkIcon />
+                                {isVisited ? '✓ Visited' : 'Learn More'} <ExternalLinkIcon />
                             </a>
                         )}
 
@@ -263,6 +304,9 @@ const RoadmapNode = ({ node, isLast }) => {
                                 style={{ width: '100%', minHeight: '80px', padding: '10px', background: 'var(--border-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border-primary)', borderRadius: '4px', marginBottom: '10px', outline: 'none', resize: 'vertical' }}
                             />
                             <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+                                {existingNote && (
+                                    <button className="node-link" style={{ padding: '5px 10px', fontSize: '0.9rem', background: 'transparent', borderColor: '#ef4444', color: '#ef4444' }} onClick={handleDeleteNoteInternal}>Delete</button>
+                                )}
                                 <button className="node-link" style={{ padding: '5px 10px', fontSize: '0.9rem', background: 'transparent' }} onClick={(e) => { e.stopPropagation(); setIsEditingNote(false); setNoteText(existingNote?.content || ""); }}>Cancel</button>
                                 <button className="node-link" style={{ padding: '5px 10px', fontSize: '0.9rem', background: '#10b981', borderColor: '#10b981' }} onClick={handleSaveNote}>Save Note</button>
                             </div>

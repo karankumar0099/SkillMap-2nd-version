@@ -63,6 +63,23 @@ export const NoteProvider = ({ children }) => {
         }
     };
 
+    const deleteNote = async (noteId) => {
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/notes/${noteId}`, {
+                method: 'DELETE',
+            });
+
+            if (response.ok) {
+                setNotes(prev => prev.filter(n => n._id !== noteId));
+                return { success: true };
+            }
+            return { success: false };
+        } catch (error) {
+            console.error("Error deleting note:", error);
+            return { success: false };
+        }
+    };
+
     const getNoteForStep = (roadmapId, stepId) => {
         return notes.find(n => n.roadmapId === roadmapId && n.stepId === stepId);
     };
@@ -70,7 +87,7 @@ export const NoteProvider = ({ children }) => {
     const bookmarkedNotes = notes.filter(n => n.isBookmarked);
 
     return (
-        <NoteContext.Provider value={{ notes, bookmarkedNotes, loading, saveNote, getNoteForStep, fetchNotes }}>
+        <NoteContext.Provider value={{ notes, bookmarkedNotes, loading, saveNote, deleteNote, getNoteForStep, fetchNotes }}>
             {children}
         </NoteContext.Provider>
     );

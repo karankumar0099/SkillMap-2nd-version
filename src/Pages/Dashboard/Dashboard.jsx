@@ -5,8 +5,8 @@ import { useNotes } from '../../context/NoteContext';
 import './Dashboard.css';
 
 const Dashboard = () => {
-    const { user } = useAuth();
-    const { bookmarkedNotes } = useNotes();
+    const { user, deleteRoadmap } = useAuth();
+    const { bookmarkedNotes, deleteNote } = useNotes();
     const [roadmapStats, setRoadmapStats] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -26,8 +26,21 @@ const Dashboard = () => {
             return;
         }
 
-        // Calculate progress for each roadmap
-        const stats = allRoadmaps.map(roadmap => {
+        // Combine standard roadmaps with custom AI ones
+        const combinedRoadmaps = [
+            ...allRoadmaps,
+            ...(user.customRoadmaps || []).map(r => ({
+                id: r.id,
+                title: r.title,
+                totalSteps: r.nodes?.length || 0,
+                isCustom: true
+            }))
+        ];
+
+        // Filter out roadmaps with no progress unless they are custom
+        // Actually, let's show all that have been "started" or are custom
+        
+        const stats = combinedRoadmaps.map(roadmap => {
             const completed = user.completedSteps?.filter(
                 step => step.roadmapId === roadmap.id
             ).length || 0;
@@ -41,11 +54,25 @@ const Dashboard = () => {
                 completed,
                 percentage
             };
-        });
+        }).filter(r => r.completed > 0 || r.isCustom);
 
         setRoadmapStats(stats);
         setLoading(false);
     }, [user]);
+
+    const handleDeleteRoadmap = async (e, roadmapId) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (window.confirm('Are you sure you want to remove this roadmap and its progress?')) {
+            await deleteRoadmap(roadmapId);
+        }
+    };
+
+    const handleDeleteNote = async (noteId) => {
+        if (window.confirm('Delete this note/bookmark?')) {
+            await deleteNote(noteId);
+        }
+    };
 
     const totalCompleted = roadmapStats.reduce((sum, r) => sum + r.completed, 0);
     const totalSteps = roadmapStats.reduce((sum, r) => sum + r.totalSteps, 0);
@@ -107,23 +134,31 @@ const Dashboard = () => {
                     <h2>Your Roadmaps</h2>
                     <div className="roadmap-grid">
                         {roadmapStats.map(roadmap => (
-                            <Link
-                                key={roadmap.id}
-                                to={`/roadmap/${roadmap.id}`}
-                                className="roadmap-card"
-                            >
-                                <h3>{roadmap.title}</h3>
-                                <div className="progress-info">
-                                    <span>{roadmap.completed} / {roadmap.totalSteps} completed</span>
-                                    <span className="percentage">{roadmap.percentage}%</span>
-                                </div>
-                                <div className="progress-bar">
-                                    <div
-                                        className="progress-fill"
-                                        style={{ width: `${roadmap.percentage}%` }}
-                                    ></div>
-                                </div>
-                            </Link>
+                            <div key={roadmap.id} className="roadmap-card-wrapper" style={{ position: 'relative' }}>
+                                <Link
+                                    to={`/roadmap/${roadmap.id}`}
+                                    className="roadmap-card"
+                                >
+                                    <h3>{roadmap.title}</h3>
+                                    <div className="progress-info">
+                                        <span>{roadmap.completed} / {roadmap.totalSteps} completed</span>
+                                        <span className="percentage">{roadmap.percentage}%</span>
+                                    </div>
+                                    <div className="progress-bar">
+                                        <div
+                                            className="progress-fill"
+                                            style={{ width: `${roadmap.percentage}%` }}
+                                        ></div>
+                                    </div>
+                                </Link>
+                                <button 
+                                    className="delete-btn" 
+                                    onClick={(e) => handleDeleteRoadmap(e, roadmap.id)}
+                                    title="Remove roadmap"
+                                >
+                                    🗑️
+                                </button>
+                            </div>
                         ))}
                     </div>
                 </section>
@@ -133,12 +168,21 @@ const Dashboard = () => {
                     {bookmarkedNotes && bookmarkedNotes.length > 0 ? (
                         <div className="roadmap-grid">
                             {bookmarkedNotes.map((note) => (
-                                <div key={note._id || `${note.roadmapId}-${note.stepId}`} className="roadmap-card" style={{ display: 'flex', flexDirection: 'column' }}>
+                                <div key={note._id || `${note.roadmapId}-${note.stepId}`} className="roadmap-card" style={{ display: 'flex', flexDirection: 'column', position: 'relative' }}>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                                         <h3 style={{ margin: '0 0 10px 0', fontSize: '1.1rem', textTransform: 'capitalize' }}>
-                                            {note.roadmapId} Roadmap
+                                            {note.roadmapId.replace(/-ai$/, ' (AI)')} Roadmap
                                         </h3>
-                                        <span style={{ color: '#f59e0b', fontSize: '1.2rem' }}>★</span>
+                                        <div style={{ display: 'flex', gap: '8px' }}>
+                                            <span style={{ color: '#f59e0b', fontSize: '1.2rem' }}>★</span>
+                                            <button 
+                                                className="delete-note-btn" 
+                                                onClick={() => handleDeleteNote(note._id)}
+                                                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontSize: '0.9rem' }}
+                                            >
+                                                🗑️
+                                            </button>
+                                        </div>
                                     </div>
                                     <p style={{ margin: '0 0 10px 0', fontSize: '0.9rem', color: 'var(--text-muted)' }}>Step: <span style={{ color: 'var(--text-secondary)' }}>{note.stepId.replace(/-/g, ' ')}</span></p>
                                     {note.content && (

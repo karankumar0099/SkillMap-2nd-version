@@ -42,9 +42,9 @@
   overflow-y: auto;
 
   
-  background: rgba(10, 10, 15, 0.3);
-  backdrop-filter: blur(5px);
-  border-right: 1px solid var(--bg-translucent);
+  background: var(--bg-translucent);
+  backdrop-filter: blur(10px);
+  border-right: 1px solid var(--border-primary);
 
   display: flex;
   flex-direction: column;
@@ -60,7 +60,7 @@
   max-width: 200px;
   text-align: right;
 
-  color: #9ca3af;
+  color: var(--text-muted);
   
   font-size: 14px;
   font-weight: 500;
@@ -112,7 +112,7 @@
 
 .official-subtitle {
   font-size: 18px;
-  color: #d1d5db;
+  color: var(--text-tertiary);
   
   max-width: 700px;
   line-height: 1.6;
@@ -147,7 +147,7 @@
 .group-title {
   font-size: 14px;
   text-transform: uppercase;
-  color: #6b7280;
+  color: var(--text-muted);
   margin-bottom: 20px;
   font-weight: 600;
   letter-spacing: 1.5px;
@@ -280,7 +280,7 @@
 }
 
 .muted-text {
-  color: #9ca3af;
+  color: var(--text-muted);
 }
 
 
@@ -293,7 +293,25 @@
     padding: 30px 20px;
   }
 
-  .official-main-title {
+    .official-main-title {
     font-size: 32px;
   }
+}
+
+/* Light Mode Overrides for premium look */
+[data-theme="light"] .official-sidebar {
+  background: rgba(0, 0, 0, 0.02);
+}
+
+[data-theme="light"] .sidebar-item.active {
+  background-color: rgba(139, 92, 246, 0.08);
+}
+
+[data-theme="light"] .official-card {
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  background: #ffffff;
+}
+
+[data-theme="light"] .official-card:hover {
+  box-shadow: 0 10px 25px rgba(139, 92, 246, 0.15);
 }

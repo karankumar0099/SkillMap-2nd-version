@@ -3,10 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import './SkillInput.css';
 import { searchRoadmapId } from '../../data/roadmapRegistry';
 import API_BASE_URL from '../../config';
+import { useAuth } from '../../context/AuthContext';
 
 const SkillInput = () => {
   const navigate = useNavigate();
+  const { user, saveCustomRoadmap } = useAuth();
   const [targetRole, setTargetRole] = useState('');
+
   const [knownSkills, setKnownSkills] = useState([]);
   const [otherSkills, setOtherSkills] = useState('');
   const [showOther, setShowOther] = useState(false);
@@ -53,6 +56,11 @@ const SkillInput = () => {
         const generatedRoadmap = await response.json();
         
         if (response.ok && generatedRoadmap && generatedRoadmap.nodes) {
+             // Save to dashboard if user is logged in
+             if (user) {
+                 saveCustomRoadmap(generatedRoadmap);
+             }
+
              navigate(`/roadmap/${generatedRoadmap.id}`, {
                state: {
                  generatedRoadmap,

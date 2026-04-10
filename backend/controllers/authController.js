@@ -44,6 +44,9 @@ const registerUser = async (req, res) => {
             name: user.name,
             email: user.email,
             completedSteps: user.completedSteps,
+            customRoadmaps: user.customRoadmaps,
+            visitedLinks: user.visitedLinks,
+            quizAttempts: user.quizAttempts,
             token: generateToken(user.id),
         });
     } else {
@@ -66,6 +69,9 @@ const loginUser = async (req, res) => {
             name: user.name,
             email: user.email,
             completedSteps: user.completedSteps,
+            customRoadmaps: user.customRoadmaps,
+            visitedLinks: user.visitedLinks,
+            quizAttempts: user.quizAttempts,
             token: generateToken(user.id),
         });
     } else {
@@ -106,11 +112,85 @@ const updateProgress = async (req, res) => {
             user.completedSteps = user.completedSteps.filter(step => !(step.roadmapId === roadmapId && step.stepId === stepId));
         }
 
-        const updatedUser = await user.save();
-        res.status(200).json(updatedUser.completedSteps);
+        await user.save();
+        res.status(200).json(user);
     } else {
         res.status(404).json({ message: "User not found" });
     }
+};
+
+// @desc    Save custom AI roadmap
+// @route   POST /api/auth/save-roadmap
+// @access  Private
+const saveRoadmap = async (req, res) => {
+    const { roadmap } = req.body;
+    if (!roadmap || !roadmap.id) {
+        return res.status(400).json({ message: "Invalid roadmap data" });
+    }
+
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    // Check if roadmap ID already exists in customRoadmaps
+    const exists = user.customRoadmaps.find(r => r.id === roadmap.id);
+    if (!exists) {
+        user.customRoadmaps.push(roadmap);
+        await user.save();
+    }
+
+    res.status(200).json(user.customRoadmaps);
+};
+
+// @desc    Delete a roadmap (custom or clear progress for standard)
+// @route   DELETE /api/auth/roadmap/:id
+// @access  Private
+const deleteRoadmap = async (req, res) => {
+    const roadmapId = req.params.id;
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    // Remove from customRoadmaps
+    user.customRoadmaps = user.customRoadmaps.filter(r => r.id !== roadmapId);
+    
+    // Clear progress for this roadmapId
+    user.completedSteps = user.completedSteps.filter(s => s.roadmapId !== roadmapId);
+    user.visitedLinks = user.visitedLinks.filter(s => s.roadmapId !== roadmapId);
+    user.quizAttempts = user.quizAttempts.filter(s => s.roadmapId !== roadmapId);
+
+    await user.save();
+    res.status(200).json(user);
+};
+
+// @desc    Track link visit
+// @route   POST /api/auth/track-visit
+// @access  Private
+const trackVisit = async (req, res) => {
+    const { roadmapId, stepId } = req.body;
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    const exists = user.visitedLinks.some(s => s.roadmapId === roadmapId && s.stepId === stepId);
+    if (!exists) {
+        user.visitedLinks.push({ roadmapId, stepId });
+        await user.save();
+    }
+    res.status(200).json(user.visitedLinks);
+};
+
+// @desc    Track quiz attempt
+// @route   POST /api/auth/track-quiz
+// @access  Private
+const trackQuiz = async (req, res) => {
+    const { roadmapId, stepId } = req.body;
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    const exists = user.quizAttempts.some(s => s.roadmapId === roadmapId && s.stepId === stepId);
+    if (!exists) {
+        user.quizAttempts.push({ roadmapId, stepId });
+        await user.save();
+    }
+    res.status(200).json(user.quizAttempts);
 };
 
 module.exports = {
@@ -118,4 +198,8 @@ module.exports = {
     loginUser,
     getMe,
     updateProgress,
+    saveRoadmap,
+    deleteRoadmap,
+    trackVisit,
+    trackQuiz,
 };

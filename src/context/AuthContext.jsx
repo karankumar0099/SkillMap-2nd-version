@@ -81,18 +81,6 @@ export const AuthProvider = ({ children }) => {
     const updateProgress = async (roadmapId, stepId, isCompleted) => {
         if (!user) return;
 
-        // Optimistic update
-        const updatedUser = { ...user };
-        if (isCompleted) {
-            if (!updatedUser.completedSteps.some(s => s.roadmapId === roadmapId && s.stepId === stepId)) {
-                updatedUser.completedSteps.push({ roadmapId, stepId });
-            }
-        } else {
-            updatedUser.completedSteps = updatedUser.completedSteps.filter(s => !(s.roadmapId === roadmapId && s.stepId === stepId));
-        }
-        setUser(updatedUser);
-        localStorage.setItem('user', JSON.stringify(updatedUser)); // Keep local storage in sync
-
         try {
             const token = localStorage.getItem('token');
             const response = await fetch(`${API_BASE_URL}/api/auth/progress`, {
@@ -104,17 +92,122 @@ export const AuthProvider = ({ children }) => {
                 body: JSON.stringify({ roadmapId, stepId, isCompleted })
             });
 
-            if (!response.ok) {
-                // Revert if failed (could implement better error handling/revert logic)
-                console.error("Failed to save progress");
+            if (response.ok) {
+                const updatedUser = await response.json();
+                setUser(updatedUser);
+                localStorage.setItem('user', JSON.stringify(updatedUser));
             }
         } catch (error) {
             console.error("Error saving progress:", error);
         }
     };
 
+    const saveCustomRoadmap = async (roadmap) => {
+        if (!user) return;
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch(`${API_BASE_URL}/api/auth/save-roadmap`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ roadmap })
+            });
+
+            if (response.ok) {
+                const customRoadmaps = await response.json();
+                const updatedUser = { ...user, customRoadmaps };
+                setUser(updatedUser);
+                localStorage.setItem('user', JSON.stringify(updatedUser));
+            }
+        } catch (error) {
+            console.error("Error saving custom roadmap:", error);
+        }
+    };
+
+    const deleteRoadmap = async (roadmapId) => {
+        if (!user) return;
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch(`${API_BASE_URL}/api/auth/roadmap/${roadmapId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (response.ok) {
+                const updatedUser = await response.json();
+                setUser(updatedUser);
+                localStorage.setItem('user', JSON.stringify(updatedUser));
+            }
+        } catch (error) {
+            console.error("Error deleting roadmap:", error);
+        }
+    };
+
+    const trackVisit = async (roadmapId, stepId) => {
+        if (!user) return;
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch(`${API_BASE_URL}/api/auth/track-visit`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ roadmapId, stepId })
+            });
+
+            if (response.ok) {
+                const visitedLinks = await response.json();
+                const updatedUser = { ...user, visitedLinks };
+                setUser(updatedUser);
+                localStorage.setItem('user', JSON.stringify(updatedUser));
+            }
+        } catch (error) {
+            console.error("Error tracking visit:", error);
+        }
+    };
+
+    const trackQuiz = async (roadmapId, stepId) => {
+        if (!user) return;
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch(`${API_BASE_URL}/api/auth/track-quiz`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ roadmapId, stepId })
+            });
+
+            if (response.ok) {
+                const quizAttempts = await response.json();
+                const updatedUser = { ...user, quizAttempts };
+                setUser(updatedUser);
+                localStorage.setItem('user', JSON.stringify(updatedUser));
+            }
+        } catch (error) {
+            console.error("Error tracking quiz:", error);
+        }
+    };
+
     return (
-        <AuthContext.Provider value={{ user, loading, login, register, logout, updateProgress }}>
+        <AuthContext.Provider value={{ 
+            user, 
+            loading, 
+            login, 
+            register, 
+            logout, 
+            updateProgress, 
+            saveCustomRoadmap, 
+            deleteRoadmap, 
+            trackVisit, 
+            trackQuiz 
+        }}>
             {children}
         </AuthContext.Provider>
     );
