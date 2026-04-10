@@ -1,0 +1,35 @@
+const express = require("express");
+const mongoose = require("mongoose");
+const cors = require("cors");
+const dotenv = require("dotenv");
+
+dotenv.config();
+
+const app = express();
+const PORT = process.env.PORT || 5001;
+
+app.use(cors());
+app.use(express.json());
+
+
+
+mongoose.connect(process.env.MONGO_URI, {
+    serverSelectionTimeoutMS: 5000,
+    family: 4
+})
+    .then(() => console.log("MongoDB Connected Successfully"))
+    .catch((err) => console.log("MongoDB Error:", err));
+
+app.use("/api/auth", require("./routes/authRoute"));
+app.use("/api/contact", require("./routes/contactRoute"));
+app.use("/api/ai", require("./routes/aiRoute"));
+app.use("/api/quiz", require("./routes/quizRoute"));
+app.use("/api/notes", require("./routes/noteRoute"));
+
+app.get("/", (req, res) => {
+    res.send("Server is running");
+});
+
+app.listen(PORT, () => {
+    console.log(`Server started on port ${PORT}`);
+});
